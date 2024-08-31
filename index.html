@@ -113,9 +113,9 @@
 <body>
     <h1>בדיקת מהירות אתר</h1>
     <form id="speedTestForm">
-        <label for="url">הכניסו כתובת URL:</label>
+        <label for="url">הכנס כתובת URL:</label>
         <input type="text" id="url" name="url" required>
-        <button type="submit">לחצו לתחילת הבדיקה</button>
+        <button type="submit">בדוק מהירות</button>
     </form>
     <div id="loading" class="loading">
         <div class="spinner"></div>
@@ -135,7 +135,7 @@
             event.preventDefault();
 
             if (isProcessing) {
-                alert('בדיקה בתהליך. אנא המתינו לסיום הבדיקה הנוכחית.');
+                alert('בדיקה בתהליך. אנא המתן לסיום הבדיקה הנוכחית.');
                 return;
             }
 
@@ -171,7 +171,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showError('אירעה שגיאה בעת קבלת הנתונים. אנא נסו שוב במועד מאוחר יותר.');
+                    showError('אירעה שגיאה בעת קבלת הנתונים. אנא נסה שוב מאוחר יותר.');
                 })
                 .finally(() => {
                     document.getElementById('loading').classList.remove('active');
