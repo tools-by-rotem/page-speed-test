@@ -101,14 +101,21 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .thank-you-message {
+            font-size: 18px;
+            color: green;
+            text-align: center;
+            margin: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>בדיקת מהירות אתר</h1>
     <form id="speedTestForm">
-        <label for="url">הכנס כתובת URL:</label>
+        <label for="url">הכניסו כתובת URL:</label>
         <input type="text" id="url" name="url" required>
-        <button type="submit">בדוק מהירות</button>
+        <button type="submit">לחצו לתחילת הבדיקה</button>
     </form>
     <div id="loading" class="loading">
         <div class="spinner"></div>
@@ -121,27 +128,56 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const cooldownPeriod = 60 * 1000; // 60 seconds
+        let isProcessing = false;
+
         document.getElementById('speedTestForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            const url = document.getElementById('url').value;
 
-            // הצגת הספינר והסתרת התוצאות והגרף
+            if (isProcessing) {
+                alert('בדיקה בתהליך. אנא המתינו לסיום הבדיקה הנוכחית.');
+                return;
+            }
+
+            const url = document.getElementById('url').value;
+            const now = Date.now();
+
+            // Check if enough time has passed since the last request
+            const lastRequestTime = sessionStorage.getItem('lastRequestTime');
+            if (lastRequestTime && now - parseInt(lastRequestTime) < cooldownPeriod) {
+                showThankYouMessage();
+                return;
+            }
+
+            // Update last request time in session storage
+            sessionStorage.setItem('lastRequestTime', now);
+
+            // Display the spinner and hide the results and chart
             document.getElementById('loading').classList.add('active');
             document.getElementById('results').style.display = 'none';
             document.querySelector('.chart-container').style.display = 'none';
 
+            isProcessing = true;
+
             fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=AIzaSyAgEEZsFf1qOjRIuqj5QHPbXzkhX4gET2g`)
                 .then(response => response.json())
                 .then(data => {
-                    displayResults(data);
-                    displayChart(data);
-                    document.getElementById('loading').classList.remove('active');
-                    document.getElementById('results').style.display = 'block';
-                    document.querySelector('.chart-container').style.display = 'block';
+                    if (data && data.lighthouseResult && data.lighthouseResult.audits) {
+                        displayResults(data);
+                        displayChart(data);
+                    } else {
+                        showError('לא התקבלו נתונים תקינים מהשירות.');
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    showError('אירעה שגיאה בעת קבלת הנתונים. אנא נסו שוב במועד מאוחר יותר.');
+                })
+                .finally(() => {
                     document.getElementById('loading').classList.remove('active');
+                    document.getElementById('results').style.display = 'block';
+                    document.querySelector('.chart-container').style.display = 'block';
+                    isProcessing = false;
                 });
         });
 
@@ -149,11 +185,11 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = `
                 <h2>תוצאות עבור ${data.id}</h2>
-                <p><strong>Paint הראשון בתוכן:</strong> ${data.lighthouseResult.audits['first-contentful-paint'].displayValue}</p>
-                <p><strong>זמן אינטראקטיבי:</strong> ${data.lighthouseResult.audits['interactive'].displayValue}</p>
-                <p><strong>גודל עמוד כולל:</strong> ${formatBytes(data.lighthouseResult.audits['total-byte-weight'].numericValue)}</p>
-                <p><strong>זמן עד לראשון בייט (TTFB):</strong> ${data.lighthouseResult.audits['server-response-time'].displayValue}</p>
-                <p><strong>מספר הבקשות:</strong> ${data.lighthouseResult.audits['network-requests'].details.items.length}</p>
+                <p><strong>Paint הראשון בתוכן:</strong> ${data.lighthouseResult.audits['first-contentful-paint']?.displayValue || 'לא זמין'}</p>
+                <p><strong>זמן אינטראקטיבי:</strong> ${data.lighthouseResult.audits['interactive']?.displayValue || 'לא זמין'}</p>
+                <p><strong>גודל עמוד כולל:</strong> ${formatBytes(data.lighthouseResult.audits['total-byte-weight']?.numericValue) || 'לא זמין'}</p>
+                <p><strong>זמן עד לראשון בייט (TTFB):</strong> ${data.lighthouseResult.audits['server-response-time']?.displayValue || 'לא זמין'}</p>
+                <p><strong>מספר הבקשות:</strong> ${data.lighthouseResult.audits['network-requests']?.details.items.length || 'לא זמין'}</p>
                 <h3>הצעות לשיפור:</h3>
                 <ul>
                     <li>נסו לצמצם את גודל התמונות כדי להקטין את זמן הטעינה.</li>
@@ -165,11 +201,11 @@
 
         function displayChart(data) {
             const ctx = document.getElementById('speedChart').getContext('2d');
-            const fcp = parseFloat(data.lighthouseResult.audits['first-contentful-paint'].displayValue.replace('s', ''));
-            const tti = parseFloat(data.lighthouseResult.audits['interactive'].displayValue.replace('s', ''));
-            const ttfb = parseFloat(data.lighthouseResult.audits['server-response-time'].displayValue.replace('s', ''));
-            const requests = data.lighthouseResult.audits['network-requests'].details.items.length;
-            const pageSize = data.lighthouseResult.audits['total-byte-weight'].numericValue / 1024 / 1024; // Convert to MB
+            const fcp = parseFloat(data.lighthouseResult.audits['first-contentful-paint']?.displayValue.replace('s', '') || 0);
+            const tti = parseFloat(data.lighthouseResult.audits['interactive']?.displayValue.replace('s', '') || 0);
+            const ttfb = parseFloat(data.lighthouseResult.audits['server-response-time']?.displayValue.replace('s', '') || 0);
+            const requests = data.lighthouseResult.audits['network-requests']?.details.items.length || 0;
+            const pageSize = data.lighthouseResult.audits['total-byte-weight']?.numericValue / 1024 / 1024 || 0; // Convert to MB
 
             new Chart(ctx, {
                 type: 'bar',
@@ -206,12 +242,26 @@
         }
 
         function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
+            if (bytes === undefined || bytes === 0) return '0 Bytes';
             const k = 1024;
             const dm = decimals < 0 ? 0 : decimals;
             const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.remove('active');
+            document.getElementById('results').style.display = 'block';
+            document.querySelector('.chart-container').style.display = 'none';
+            document.getElementById('results').innerHTML = `<p style="color: red;">${message}</p>`;
+        }
+
+        function showThankYouMessage() {
+            document.getElementById('loading').classList.remove('active');
+            document.getElementById('results').style.display = 'block';
+            document.querySelector('.chart-container').style.display = 'none';
+            document.getElementById('results').innerHTML = `<p>תודה שהשתמשתם בכלי בדיקת המהירות! לשימוש נוסף אנא רעננו את הדף.</p>`;
         }
     </script>
 </body>
