@@ -108,18 +108,26 @@
             text-align: center;
             margin: 20px;
         }
+
+        #countdown {
+            font-size: 18px;
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>בדיקת מהירות אתר</h1>
     <form id="speedTestForm">
-        <label for="url">הכנס כתובת URL:</label>
+        <label for="url">הכניסו כתובת URL:</label>
         <input type="text" id="url" name="url" required>
-        <button type="submit">בדוק מהירות</button>
+        <button type="submit">לתחילת הבדיקה לחצו</button>
     </form>
+    <div id="countdown"></div> <!-- Place countdown below the form -->
     <div id="loading" class="loading">
         <div class="spinner"></div>
-        <p>טוען, אנא המתן...</p>
+        <p>טוען, אנא המתינו...</p>
     </div>
     <div id="results"></div>
     <div class="chart-container">
@@ -128,14 +136,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const cooldownPeriod = 60 * 1000; // 60 seconds
+        const cooldownPeriod = 60 * 1000; // 60 seconds in milliseconds
         let isProcessing = false;
 
         document.getElementById('speedTestForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
             if (isProcessing) {
-                alert('בדיקה בתהליך. אנא המתן לסיום הבדיקה הנוכחית.');
+                alert('בדיקה בתהליך. אנא המתינו לסיום הבדיקה הנוכחית.');
                 return;
             }
 
@@ -145,7 +153,8 @@
             // Check if enough time has passed since the last request
             const lastRequestTime = sessionStorage.getItem('lastRequestTime');
             if (lastRequestTime && now - parseInt(lastRequestTime) < cooldownPeriod) {
-                showThankYouMessage();
+                const timeRemaining = cooldownPeriod - (now - parseInt(lastRequestTime));
+                startCountdown(timeRemaining);
                 return;
             }
 
@@ -156,6 +165,7 @@
             document.getElementById('loading').classList.add('active');
             document.getElementById('results').style.display = 'none';
             document.querySelector('.chart-container').style.display = 'none';
+            document.getElementById('countdown').style.display = 'none';
 
             isProcessing = true;
 
@@ -171,7 +181,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showError('אירעה שגיאה בעת קבלת הנתונים. אנא נסה שוב מאוחר יותר.');
+                    showError('אירעה שגיאה בעת קבלת הנתונים. אנא נסו שוב במועד מאוחר יותר.');
                 })
                 .finally(() => {
                     document.getElementById('loading').classList.remove('active');
@@ -180,6 +190,25 @@
                     isProcessing = false;
                 });
         });
+
+        function startCountdown(timeRemaining) {
+            const countdownElement = document.getElementById('countdown');
+            countdownElement.style.display = 'block';
+
+            function updateCountdown() {
+                if (timeRemaining <= 0) {
+                    countdownElement.textContent = 'תודה שהשתמשתם בכלי בדיקת המהירות! אתם יכולים לבצע בדיקה נוספת.';
+                    countdownElement.style.color = 'green';
+                    return;
+                }
+                const seconds = Math.ceil(timeRemaining / 1000);
+                countdownElement.textContent = `לא ניתן לבצע בדיקה נוספת עד שיעברו ${seconds} שניות.`;
+                timeRemaining -= 1000;
+                setTimeout(updateCountdown, 1000);
+            }
+
+            updateCountdown();
+        }
 
         function displayResults(data) {
             const resultsDiv = document.getElementById('results');
@@ -201,11 +230,11 @@
 
         function displayChart(data) {
             const ctx = document.getElementById('speedChart').getContext('2d');
-            const fcp = parseFloat(data.lighthouseResult.audits['first-contentful-paint']?.displayValue.replace('s', '') || 0);
-            const tti = parseFloat(data.lighthouseResult.audits['interactive']?.displayValue.replace('s', '') || 0);
-            const ttfb = parseFloat(data.lighthouseResult.audits['server-response-time']?.displayValue.replace('s', '') || 0);
+            const fcp = parseFloat(data.lighthouseResult.audits['first-contentful-paint']?.displayValue.replace('s', '')) || 0;
+            const tti = parseFloat(data.lighthouseResult.audits['interactive']?.displayValue.replace('s', '')) || 0;
+            const ttfb = parseFloat(data.lighthouseResult.audits['server-response-time']?.displayValue.replace('s', '')) || 0;
             const requests = data.lighthouseResult.audits['network-requests']?.details.items.length || 0;
-            const pageSize = data.lighthouseResult.audits['total-byte-weight']?.numericValue / 1024 / 1024 || 0; // Convert to MB
+            const pageSize = (data.lighthouseResult.audits['total-byte-weight']?.numericValue / 1024 / 1024) || 0; // Convert to MB
 
             new Chart(ctx, {
                 type: 'bar',
@@ -248,20 +277,6 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-        }
-
-        function showError(message) {
-            document.getElementById('loading').classList.remove('active');
-            document.getElementById('results').style.display = 'block';
-            document.querySelector('.chart-container').style.display = 'none';
-            document.getElementById('results').innerHTML = `<p style="color: red;">${message}</p>`;
-        }
-
-        function showThankYouMessage() {
-            document.getElementById('loading').classList.remove('active');
-            document.getElementById('results').style.display = 'block';
-            document.querySelector('.chart-container').style.display = 'none';
-            document.getElementById('results').innerHTML = `<p>תודה שהשתמשתם בכלי בדיקת המהירות! לשימוש נוסף אנא רעננו את הדף.</p>`;
         }
     </script>
 </body>
