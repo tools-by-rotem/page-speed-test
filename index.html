@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>בדיקת מהירות אתר</title>
+    <title>בדיקת מהירות טעינה</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -164,7 +164,7 @@
     </style>
 </head>
 <body>
-    <h1>בדיקת מהירות אתר</h1>
+    <h1>בדיקת מהירות טעינה</h1>
     <form id="speedTestForm">
         <label for="url">הכניסו כתובת URL:</label>
         <input type="text" id="url" name="url" required>
@@ -264,47 +264,33 @@
             resultsDiv.innerHTML = `
                 <h2>תוצאות עבור ${data.id}</h2>
                 <p><strong>Paint הראשון בתוכן:</strong> ${data.lighthouseResult.audits['first-contentful-paint']?.displayValue || 'לא זמין'}</p>
-                <p><strong>זמן אינטראקטיביות:</strong> ${data.lighthouseResult.audits['interactive']?.displayValue || 'לא זמין'}</p>
-                <p><strong>ציון מהירות כוללת:</strong> ${data.lighthouseResult.categories.performance?.score * 100 || 'לא זמין'}</p>
+                <p><strong>זמן לאינטראקטיביות:</strong> ${data.lighthouseResult.audits['interactive']?.displayValue || 'לא זמין'}</p>
+                <p><strong>ציון ביצועים:</strong> ${data.lighthouseResult.categories.performance.score * 100 || 'לא זמין'}</p>
             `;
         }
 
         function displayChart(data) {
-            const labels = ['Paint הראשון בתוכן', 'זמן אינטראקטיביות', 'ציון מהירות כוללת', 'השהיית תגובה ראשונית', 'סיכום זמן חסימה כולל'];
-            const values = [
-                parseFloat(data.lighthouseResult.audits['first-contentful-paint']?.numericValue) || 0,
-                parseFloat(data.lighthouseResult.audits['interactive']?.numericValue) || 0,
-                parseFloat(data.lighthouseResult.categories.performance?.score) * 100 || 0,
-                parseFloat(data.lighthouseResult.audits['first-cpu-idle']?.numericValue) || 0,
-                parseFloat(data.lighthouseResult.audits['total-blocking-time']?.numericValue) || 0
-            ];
-
             const ctx = document.getElementById('speedChart').getContext('2d');
+            const chartData = {
+                labels: ['First Contentful Paint', 'Speed Index', 'Time to Interactive'],
+                datasets: [{
+                    label: 'זמני ביצוע (במילי שניות)',
+                    data: [
+                        data.lighthouseResult.audits['first-contentful-paint']?.numericValue || 0,
+                        data.lighthouseResult.audits['speed-index']?.numericValue || 0,
+                        data.lighthouseResult.audits['interactive']?.numericValue || 0
+                    ],
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            };
+
             new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'זמן במילי-שניות',
-                        data: values,
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.2)', 
-                            'rgba(255, 206, 86, 0.2)', 
-                            'rgba(75, 192, 192, 0.2)',
-                            'rgba(153, 102, 255, 0.2)',
-                            'rgba(255, 159, 64, 0.2)'
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)', 
-                            'rgba(255, 206, 86, 1)', 
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
+                data: chartData,
                 options: {
+                    responsive: true,
                     scales: {
                         y: {
                             beginAtZero: true
@@ -315,8 +301,7 @@
         }
 
         function showError(message) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `<p style="color: red;">${message}</p>`;
+            document.getElementById('results').innerHTML = `<p>${message}</p>`;
         }
     </script>
 </body>
