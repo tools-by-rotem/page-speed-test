@@ -268,13 +268,6 @@
                 <p><strong>גודל עמוד כולל:</strong> ${formatBytes(data.lighthouseResult.audits['total-byte-weight']?.numericValue) || 'לא זמין'}</p>
                 <p><strong>זמן עד לראשון בייט (TTFB):</strong> ${data.lighthouseResult.audits['server-response-time']?.displayValue || 'לא זמין'}</p>
                 <p><strong>מספר הבקשות:</strong> ${data.lighthouseResult.audits['network-requests']?.details.items.length || 'לא זמין'}</p>
-                <h3>הצעות לשיפור:</h3>
-                <ul>
-                    <li>נסו לצמצם את גודל התמונות כדי להקטין את זמן הטעינה.</li>
-                    <li>השתמשו בטכנולוגיות Cache כדי לייעל את זמן הטעינה של העמוד.</li>
-                    <li>הפחיתו את מספר הבקשות לשרת על ידי אופטימיזציה של קבצים.</li>
-                </ul>
-            `;
         }
 
         function displayChart(data) {
