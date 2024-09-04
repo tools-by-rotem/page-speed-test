@@ -264,6 +264,7 @@
             resultsDiv.innerHTML = `
                 <h2>תוצאות עבור ${data.id}</h2>
                 <p><strong>Paint הראשון בתוכן:</strong> ${data.lighthouseResult.audits['first-contentful-paint']?.displayValue || 'לא זמין'}</p>
+                <p><strong>אינדקס מהירות:</strong> ${data.lighthouseResult.audits['speed-index']?.displayValue || 'לא זמין'}</p>
                 <p><strong>זמן לאינטראקטיביות:</strong> ${data.lighthouseResult.audits['interactive']?.displayValue || 'לא זמין'}</p>
                 <p><strong>ציון ביצועים:</strong> ${data.lighthouseResult.categories.performance.score * 100 || 'לא זמין'}</p>
             `;
@@ -272,16 +273,20 @@
         function displayChart(data) {
             const ctx = document.getElementById('speedChart').getContext('2d');
             const chartData = {
-                labels: ['First Contentful Paint', 'Speed Index', 'Time to Interactive'],
+                labels: [
+                    'First Contentful Paint',
+                    'Speed Index',
+                    'Time to Interactive'
+                ],
                 datasets: [{
-                    label: 'זמני ביצוע (במילי שניות)',
+                    label: 'Performance Metrics',
                     data: [
                         data.lighthouseResult.audits['first-contentful-paint']?.numericValue || 0,
                         data.lighthouseResult.audits['speed-index']?.numericValue || 0,
                         data.lighthouseResult.audits['interactive']?.numericValue || 0
                     ],
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 }]
             };
